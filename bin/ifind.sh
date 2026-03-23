@@ -116,7 +116,8 @@ ifind() {
         return 1
     fi
 
-    # Build preview command (inline so it works in both bash and zsh)
+    # Build preview command (single quotes intentional — fzf substitutes {} at runtime)
+    # shellcheck disable=SC2016
     local preview_cmd='
         dir={}
         for f in "$dir"/CLAUDE.md "$dir"/README.md "$dir"/README.rst "$dir"/README "$dir"/README.txt; do
