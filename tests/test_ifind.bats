@@ -82,6 +82,42 @@ setup() {
     [[ "$output" == *"project-a"* ]]
 }
 
+@test "ifind multi-word AND search filters correctly" {
+    run bash -c "
+        source '${BATS_TEST_DIRNAME}/../bin/ifind.sh'
+        export IFIND_ROOT='${BATS_TEST_DIRNAME}/fixtures'
+        export IFIND_DEPTH=1
+        fzf() { head -1; }
+        export -f fzf
+        ifind web scraping
+    "
+    [[ "$output" == *"project-a"* ]]
+}
+
+@test "ifind content search works in zsh" {
+    command -v zsh >/dev/null || skip "zsh not installed"
+    run zsh -c "
+        source '${BATS_TEST_DIRNAME}/../bin/ifind.sh'
+        export IFIND_ROOT='${BATS_TEST_DIRNAME}/fixtures'
+        export IFIND_DEPTH=1
+        fzf() { head -1; }
+        ifind scraping
+    "
+    [[ "$output" == *"project-a"* ]]
+}
+
+@test "ifind multi-word AND works in zsh" {
+    command -v zsh >/dev/null || skip "zsh not installed"
+    run zsh -c "
+        source '${BATS_TEST_DIRNAME}/../bin/ifind.sh'
+        export IFIND_ROOT='${BATS_TEST_DIRNAME}/fixtures'
+        export IFIND_DEPTH=1
+        fzf() { head -1; }
+        ifind web scraping
+    "
+    [[ "$output" == *"project-a"* ]]
+}
+
 @test "IFIND_ROOT override is respected" {
     run bash -c "
         source '${BATS_TEST_DIRNAME}/../bin/ifind.sh'

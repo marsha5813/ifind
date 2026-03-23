@@ -61,39 +61,52 @@ _ifind_content() {
 
     [[ $# -eq 0 ]] && return 0
 
-    # Build glob args from file list
+    # Build glob args from comma-separated file list.
+    # Uses read -d ',' instead of IFS word-splitting — zsh doesn't
+    # word-split unquoted variables, so `for f in $files` fails there.
     local glob_args=()
-    local OLD_IFS="$IFS"
-    IFS=','
-    for f in $files; do
-        glob_args+=(--glob "$f")
-    done
-    IFS="$OLD_IFS"
+    local _f
+    while IFS=',' read -r -d ',' _f || [[ -n "$_f" ]]; do
+        [[ -n "$_f" ]] && glob_args+=(--glob "$_f")
+    done <<< "$files,"
 
-    # Start with files matching the first word
+    # Save first word to a local before any pipeline (fzf pattern:
+    # never reference $1 inside a pipe — bash runs pipes in subshells
+    # where $1 is empty, zsh runs them in the current shell but shift
+    # interacts unpredictably).
+    local first_word="$1"
+    shift
+
     local content_matches
     content_matches=$(rg --ignore-case --files-with-matches \
         --no-messages \
         --max-depth "$((depth + 1))" \
         "${glob_args[@]}" \
-        -- "$1" "$root" 2>/dev/null)
-    shift
+        -- "$first_word" "$root" 2>/dev/null)
 
-    # Filter to keep only files containing ALL remaining words
+    # Filter to keep only files containing ALL remaining words.
+    # Uses here-strings (<<<) instead of pipes to avoid subshell
+    # scoping issues. Each word saved to a local before the loop.
+    local word _line
     while [[ $# -gt 0 && -n "$content_matches" ]]; do
-        content_matches=$(echo "$content_matches" | while IFS= read -r f; do
-            if rg --ignore-case --quiet -- "$1" "$f" 2>/dev/null; then
-                echo "$f"
-            fi
-        done)
+        word="$1"
         shift
+        local filtered=""
+        while IFS= read -r _line; do
+            if rg --ignore-case --quiet -- "$word" "$_line" 2>/dev/null; then
+                filtered="${filtered:+${filtered}
+}${_line}"
+            fi
+        done <<< "$content_matches"
+        content_matches="$filtered"
     done
 
     # Extract parent directories
     if [[ -n "$content_matches" ]]; then
-        echo "$content_matches" | while IFS= read -r filepath; do
-            [[ -n "$filepath" ]] && dirname "$filepath"
-        done
+        local _filepath
+        while IFS= read -r _filepath; do
+            [[ -n "$_filepath" ]] && dirname "$_filepath"
+        done <<< "$content_matches"
     fi
 }
 
