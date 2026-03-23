@@ -111,7 +111,7 @@ _ifind_content() {
 }
 
 ifind() {
-    local root="${IFIND_ROOT:-$HOME/dev}"
+    local root="${IFIND_ROOT:-$PWD}"
     local depth="${IFIND_DEPTH:-1}"
     local files="${IFIND_FILES:-$IFIND_DEFAULT_FILES}"
 

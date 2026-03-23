@@ -75,7 +75,7 @@ Set these environment variables in your shell rc file:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `IFIND_ROOT` | `~/dev` | Root directory to search |
+| `IFIND_ROOT` | current directory | Root directory to search |
 | `IFIND_DEPTH` | `1` | How many levels deep to look for project directories |
 | `IFIND_FILES` | *(see below)* | Comma-separated list of filenames to search inside |
 

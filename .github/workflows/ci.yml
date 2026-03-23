@@ -23,7 +23,9 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ripgrep fd-find
+          sudo apt-get install -y ripgrep fd-find zsh
+          # fd-find installs as 'fdfind' on Ubuntu — symlink to 'fd'
+          sudo ln -sf "$(which fdfind)" /usr/local/bin/fd
           # Install fzf
           git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
           ~/.fzf/install --bin
