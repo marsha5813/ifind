@@ -6,14 +6,44 @@
 
 <!-- ![demo](docs/demo.gif) -->
 
-## Quick Start
+## Installation
+
+### macOS
 
 ```sh
-# macOS
 brew install fzf ripgrep fd
+curl -fsSL https://raw.githubusercontent.com/marsha5813/ifind/main/install.sh | bash
+```
 
-# Clone and install
-git clone https://github.com/your-username/ifind.git
+### Linux (Debian/Ubuntu)
+
+```sh
+sudo apt-get install fzf ripgrep fd-find
+curl -fsSL https://raw.githubusercontent.com/marsha5813/ifind/main/install.sh | bash
+```
+
+### Linux (Arch)
+
+```sh
+sudo pacman -S fzf ripgrep fd
+curl -fsSL https://raw.githubusercontent.com/marsha5813/ifind/main/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+scoop install fzf ripgrep fd
+irm https://raw.githubusercontent.com/marsha5813/ifind/main/install.ps1 | iex
+```
+
+### Windows (WSL)
+
+Follow the Linux instructions above.
+
+### From source
+
+```sh
+git clone https://github.com/marsha5813/ifind.git
 cd ifind
 ./install.sh
 ```
@@ -78,16 +108,6 @@ export IFIND_FILES="README.md,package.json,Cargo.toml"  # only search these file
 | Linux | zsh, bash | Fully supported |
 | Windows | PowerShell | Supported (see `bin/ifind.ps1`) |
 | Windows (WSL) | zsh, bash | Fully supported |
-
-### Windows Installation
-
-```powershell
-# Install dependencies via scoop
-scoop install fzf ripgrep fd
-
-# Install ifind
-.\install.ps1
-```
 
 ## Uninstall
 

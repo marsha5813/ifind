@@ -15,13 +15,26 @@ info()  { echo -e "${GREEN}[ifind]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[ifind]${NC} $*"; }
 error() { echo -e "${RED}[ifind]${NC} $*" >&2; }
 
-# Find the repo's bin directory (relative to this script)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOURCE_FILE="${SCRIPT_DIR}/bin/ifind.sh"
+GITHUB_RAW_URL="https://raw.githubusercontent.com/marsha5813/ifind/main"
 
-if [[ ! -f "$SOURCE_FILE" ]]; then
-    error "Cannot find bin/ifind.sh relative to install script."
-    exit 1
+# Find source file: local repo first, then download from GitHub
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+SOURCE_FILE="${SCRIPT_DIR:+$SCRIPT_DIR/bin/ifind.sh}"
+
+if [[ -n "$SOURCE_FILE" && -f "$SOURCE_FILE" ]]; then
+    info "Installing from local repo..."
+else
+    info "Downloading from GitHub..."
+    SOURCE_FILE=$(mktemp)
+    trap 'rm -f "$SOURCE_FILE"' EXIT
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "${GITHUB_RAW_URL}/bin/ifind.sh" -o "$SOURCE_FILE"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$SOURCE_FILE" "${GITHUB_RAW_URL}/bin/ifind.sh"
+    else
+        error "curl or wget is required to download ifind."
+        exit 1
+    fi
 fi
 
 # Check dependencies
