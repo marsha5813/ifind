@@ -1,0 +1,4 @@
+[project]
+name = "data-pipeline"
+description = "ETL data pipeline for analytics processing"
+version = "0.1.0"
