@@ -45,30 +45,29 @@ ifind() {
 
     local matches
     if [[ $# -gt 0 ]]; then
-        # Use positional params directly as the word list (works in both bash and zsh)
         local query="$*"
 
-        # Source 1: Match against directory basenames (case-insensitive)
-        # All words must appear in the directory name
+        # Source 1: Match directory basenames — all words must appear (case-insensitive)
+        # Uses a grep chain: pipe dir list through one grep per word
         local name_matches
         name_matches=$(echo "$dirs" | while IFS= read -r d; do
             d="${d%/}"
-            local dir_name="${d##*/}"
-            local all_match=true
-            local w
-            for w in "$@"; do
-                if ! echo "$dir_name" | grep -qi -- "$w"; then
-                    all_match=false
-                    break
-                fi
-            done
-            if $all_match; then
-                echo "$d"
-            fi
+            echo "${d##*/}	$d"
+        done)
+        while [[ $# -gt 0 ]]; do
+            name_matches=$(echo "$name_matches" | grep -i -- "$1")
+            shift
+        done
+        # Extract the full paths (after the tab)
+        name_matches=$(echo "$name_matches" | while IFS= read -r line; do
+            [[ -n "$line" ]] && printf '%s\n' "${line#*	}"
         done)
 
-        # Source 2: Match inside config files via ripgrep
-        # All words must appear somewhere in the file
+        # Restore positional params from the saved query string
+        # shellcheck disable=SC2086
+        set -- $query
+
+        # Source 2: Match inside config files — all words must appear
         local glob_args=()
         local IFS=','
         for f in $files; do
@@ -76,26 +75,26 @@ ifind() {
         done
         unset IFS
 
-        # Start with files matching the first word, then filter for remaining words
+        # Start with files matching the first word
         local content_matches
         content_matches=$(rg --ignore-case --files-with-matches \
             --no-messages \
             --max-depth "$((depth + 1))" \
             "${glob_args[@]}" \
             -- "$1" "$root" 2>/dev/null)
-
-        # Filter results to only keep files containing ALL remaining words
         shift
-        local w
-        for w in "$@"; do
+
+        # Filter to keep only files containing ALL remaining words
+        while [[ $# -gt 0 ]]; do
             if [[ -z "$content_matches" ]]; then
                 break
             fi
             content_matches=$(echo "$content_matches" | while IFS= read -r f; do
-                if rg --ignore-case --quiet -- "$w" "$f" 2>/dev/null; then
+                if rg --ignore-case --quiet -- "$1" "$f" 2>/dev/null; then
                     echo "$f"
                 fi
             done)
+            shift
         done
 
         # Extract parent directories (skip empty lines)
