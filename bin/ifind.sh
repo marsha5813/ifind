@@ -45,31 +45,63 @@ ifind() {
 
     local matches
     if [[ -n "$query" ]]; then
+        # Split query into individual words for AND matching
+        local words=()
+        IFS=' ' read -ra words <<< "$query"
+
         # Source 1: Match against directory basenames (case-insensitive)
+        # All words must appear in the directory name
         local name_matches
         name_matches=$(echo "$dirs" | while IFS= read -r d; do
-            if echo "${d##*/}" | grep -qi -- "$query"; then
+            d="${d%/}"
+            local dir_name="${d##*/}"
+            local all_match=true
+            for word in "${words[@]}"; do
+                if ! echo "$dir_name" | grep -qi -- "$word"; then
+                    all_match=false
+                    break
+                fi
+            done
+            if $all_match; then
                 echo "$d"
             fi
         done)
 
         # Source 2: Match inside config files via ripgrep
-        # Build glob args from file list
+        # All words must appear somewhere in the file
         local glob_args=()
         IFS=',' read -ra file_list <<< "$files"
         for f in "${file_list[@]}"; do
             glob_args+=(--glob "$f")
         done
 
+        # Start with files matching the first word, then filter for remaining words
         local content_matches
         content_matches=$(rg --ignore-case --files-with-matches \
             --no-messages \
             --max-depth "$((depth + 1))" \
             "${glob_args[@]}" \
-            -- "$query" "$root" 2>/dev/null \
-            | while IFS= read -r filepath; do
-                dirname "$filepath"
+            -- "${words[0]}" "$root" 2>/dev/null)
+
+        # Filter results to only keep files containing ALL remaining words
+        local word
+        for word in "${words[@]:1}"; do
+            if [[ -z "$content_matches" ]]; then
+                break
+            fi
+            content_matches=$(echo "$content_matches" | while IFS= read -r f; do
+                if rg --ignore-case --quiet -- "$word" "$f" 2>/dev/null; then
+                    echo "$f"
+                fi
             done)
+        done
+
+        # Extract parent directories (skip empty lines)
+        if [[ -n "$content_matches" ]]; then
+            content_matches=$(echo "$content_matches" | while IFS= read -r filepath; do
+                [[ -n "$filepath" ]] && dirname "$filepath"
+            done)
+        fi
 
         # Combine and deduplicate
         matches=$(printf '%s\n%s' "$name_matches" "$content_matches" | sort -u | grep -v '^$')
