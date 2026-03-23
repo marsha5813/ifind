@@ -48,9 +48,7 @@ ifind() {
         # Source 1: Match against directory basenames (case-insensitive)
         local name_matches
         name_matches=$(echo "$dirs" | while IFS= read -r d; do
-            local basename
-            basename=$(basename "$d")
-            if echo "$basename" | grep -qi "$query"; then
+            if echo "${d##*/}" | grep -qi -- "$query"; then
                 echo "$d"
             fi
         done)
