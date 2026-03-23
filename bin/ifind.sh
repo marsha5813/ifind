@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ifind - Intelligent project finder
-# https://github.com/joey/ifind
+# https://github.com/marsha5813/ifind
 #
 # Source this file in your shell rc to use the `ifind` function.
+# Compatible with both bash and zsh.
 # Usage: ifind [query...]
 
 # Default config files to search inside projects
 IFIND_DEFAULT_FILES="CLAUDE.md,README.md,README.rst,README,README.txt,package.json,pyproject.toml,Cargo.toml,go.mod,Makefile,docker-compose.yml,docker-compose.yaml,.env.example,setup.py,setup.cfg,pom.xml,build.gradle,CMakeLists.txt"
 
 ifind() {
-    local query="$*"
     local root="${IFIND_ROOT:-$HOME/dev}"
     local depth="${IFIND_DEPTH:-1}"
     local files="${IFIND_FILES:-$IFIND_DEFAULT_FILES}"
@@ -44,10 +44,9 @@ ifind() {
     fi
 
     local matches
-    if [[ -n "$query" ]]; then
-        # Split query into individual words for AND matching
-        local words=()
-        IFS=' ' read -ra words <<< "$query"
+    if [[ $# -gt 0 ]]; then
+        # Use positional params directly as the word list (works in both bash and zsh)
+        local query="$*"
 
         # Source 1: Match against directory basenames (case-insensitive)
         # All words must appear in the directory name
@@ -56,8 +55,9 @@ ifind() {
             d="${d%/}"
             local dir_name="${d##*/}"
             local all_match=true
-            for word in "${words[@]}"; do
-                if ! echo "$dir_name" | grep -qi -- "$word"; then
+            local w
+            for w in "$@"; do
+                if ! echo "$dir_name" | grep -qi -- "$w"; then
                     all_match=false
                     break
                 fi
@@ -70,10 +70,11 @@ ifind() {
         # Source 2: Match inside config files via ripgrep
         # All words must appear somewhere in the file
         local glob_args=()
-        IFS=',' read -ra file_list <<< "$files"
-        for f in "${file_list[@]}"; do
+        local IFS=','
+        for f in $files; do
             glob_args+=(--glob "$f")
         done
+        unset IFS
 
         # Start with files matching the first word, then filter for remaining words
         local content_matches
@@ -81,16 +82,17 @@ ifind() {
             --no-messages \
             --max-depth "$((depth + 1))" \
             "${glob_args[@]}" \
-            -- "${words[0]}" "$root" 2>/dev/null)
+            -- "$1" "$root" 2>/dev/null)
 
         # Filter results to only keep files containing ALL remaining words
-        local word
-        for word in "${words[@]:1}"; do
+        shift
+        local w
+        for w in "$@"; do
             if [[ -z "$content_matches" ]]; then
                 break
             fi
             content_matches=$(echo "$content_matches" | while IFS= read -r f; do
-                if rg --ignore-case --quiet -- "$word" "$f" 2>/dev/null; then
+                if rg --ignore-case --quiet -- "$w" "$f" 2>/dev/null; then
                     echo "$f"
                 fi
             done)
