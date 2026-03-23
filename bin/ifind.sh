@@ -173,9 +173,7 @@ ifind() {
         --header "ifind${query:+: $query}" \
         --preview "bash -c '$preview_cmd'" \
         --preview-window 'right:60%:wrap' \
-        --ansi \
-        --select-1 \
-        --exit-0)
+        --ansi)
 
     if [[ -n "$selected" ]]; then
         cd "$selected" || return 1
